@@ -1,0 +1,3 @@
+﻿  JoinLess.cpp
+C:\Users\shujuanjuan\source\repos\joinLess\joinLess\JoinLess.cpp(93): warning C4715: “JoinLess::_generateCandidateColocations_k”: 不是所有的控件路径都返回值
+  joinLess.vcxproj -> C:\Users\shujuanjuan\source\repos\joinLess\Debug\joinLess.exe
