@@ -10,14 +10,14 @@ int main() {
     vector<InstanceType> instances;
     loadData(instances);
 
-    JoinLess joinLess(instances,0.2,0,4);
+    JoinLess joinLess(instances,0.2,0.5,1);
     joinLess.execute();
 
     return 0;
 }
 
 void loadData(vector<InstanceType>& instances) {
-    instances.push_back({ 1, 'A', {0, 2} });
+   /* instances.push_back({ 1, 'A', {0, 2} });
     instances.push_back({ 2, 'A', {11, 3} });
     instances.push_back({ 3, 'A', {12,3} });
     instances.push_back({ 4, 'A', {10, 4} });
@@ -30,7 +30,7 @@ void loadData(vector<InstanceType>& instances) {
 
     instances.push_back({ 1, 'C', {12,1.5} });
     instances.push_back({ 2, 'C', {0, 3} });
-    instances.push_back({ 3, 'C', {30, 10} });
+    instances.push_back({ 3, 'C', {30, 10} });*/
     
     //A1 B1 {0, 2} {0, 1}    1
     //A1 C2 {0, 2} {0, 3}    1
@@ -41,8 +41,8 @@ void loadData(vector<InstanceType>& instances) {
     //B4 C1  {11,2}  {12,1.5}  1.25
     //B5 C3  {31,11} {30, 10}  4
 
-    //ifstream ifs("colocation.csv", ios::in);
-    /*ifstream ifs("1.txt", ios::in);
+    ifstream ifs("colocation.csv", ios::in);
+    //ifstream ifs("1.txt", ios::in);
 
     string line;
     while (getline(ifs, line)) {
@@ -56,5 +56,5 @@ void loadData(vector<InstanceType>& instances) {
         FeatureType feature;  InstanceIdType instanceId; double x, y;
         ss >> feature >> instanceId >> x >> y;
         instances.push_back(make_tuple(instanceId, feature, make_pair(x, y)));
-    }*/
+    }
 }

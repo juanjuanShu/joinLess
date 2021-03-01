@@ -19,6 +19,9 @@ using ColocationPackage = map<ColocationType,TableInstanceType>;
 
 using InstanceObjectType = pair<FeatureType, InstanceIdType>;
 using NeighborhoodsObjectType = vector<InstanceObjectType>;
+using TableRowNeighborhoodsType = vector<NeighborhoodsObjectType>;
 
 using RelationPairType = pair<InstanceObjectType, InstanceObjectType>;
 using RelationsType = set<RelationPairType>;
+
+
