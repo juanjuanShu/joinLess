@@ -1,7 +1,7 @@
 #include "JoinLess.h"
 #include "Common.h"
 
-JoinLess::JoinLess(vector<InstanceType>& instances,double min_prev, double min_cond_prob, double star_radius)
+JoinLess::JoinLess(vector<InstanceType>& instances, double min_prev, double min_cond_prob, double star_radius)
 	:_min_prev(min_prev),
 	_min_cond_prob(min_cond_prob),
 	_star_radius(star_radius)
@@ -9,7 +9,7 @@ JoinLess::JoinLess(vector<InstanceType>& instances,double min_prev, double min_c
 	for (auto it = instances.begin(); it != instances.end(); it++) {
 		auto instanceId = get<InstanceIdType>(*it);
 		auto feature = get<FeatureType>(*it);
-		auto &location = get<LocationType>(*it);
+		auto& location = get<LocationType>(*it);
 
 		_instances[feature][instanceId] = location;
 
@@ -22,44 +22,40 @@ JoinLess::JoinLess(vector<InstanceType>& instances,double min_prev, double min_c
 		_cliqueInstances[1][{feature}].push_back({ make_pair(feature, instanceId) });
 	}
 
-	_relations = _gen_relations(instances);
+	_gen_relations(instances);
 }
 
-RelationsType JoinLess::_gen_relations(vector<InstanceType>& instances) {
-	RelationsType relations;
-
+void JoinLess::_gen_relations(vector<InstanceType>& instances) {
 	for (unsigned int i = 0; i < instances.size(); ++i) {
 		InstanceType& instance1 = instances[i];
 		auto id1 = get<InstanceIdType>(instance1);
 		auto feature1 = get<FeatureType>(instance1);
-		auto &location1 = get<LocationType>(instance1);
+		auto& location1 = get<LocationType>(instance1);
 		for (unsigned int j = i + 1; j < instances.size(); ++j) {
 			InstanceType& instance2 = instances[j];
 			auto id2 = get<InstanceIdType>(instance2);
 			auto feature2 = get<FeatureType>(instance2);
-			auto location2 = get<LocationType>(instance2);
-			
+			auto& location2 = get<LocationType>(instance2);
+
 			//这样做的前提是输入数据的feature有序
 			//if (feature1 >= feature2) continue;
 
 			//这样做也是错误的，因为边和边之间可以是同类关系，因为最终合成的是中心和边的关系
 			//if (feature1 == feature2) continue;
-			
-			if ((new Common())->hasRelation(location1, location2,_star_radius)) {
+
+			if ((new Common())->hasRelation(location1, location2, _star_radius)) {
 				// feature1.id1 should less than feature2.id2.这里未做处理，是因为默认输入数据有序
-				relations.insert({ { feature1 ,id1 }, { feature2 ,id2 } });
+				_relations.insert({ { feature1 ,id1 }, { feature2 ,id2 } });
 			}
 		}
-		
-	}
 
-	return relations;
+	}
 }
-	
+
 void JoinLess::_gen_star_neighborhoods() {
-	for (auto &relation : _relations) {
-		auto &starCenter = relation.first;
-		auto &starEdge = relation.second;
+	for (auto& relation : _relations) {
+		auto& starCenter = relation.first;
+		auto& starEdge = relation.second;
 
 		// The star neighborhoods include the star center self.
 		FeatureType centerFeature = starCenter.first;
@@ -77,13 +73,13 @@ void JoinLess::_gen_star_neighborhoods() {
 
 ColocationSetType JoinLess::_generateCandidateColocations_2() {
 	vector<ColocationType> candidateColocations;
-	ColocationType colocations ;
+	ColocationType colocations;
 
-	for (auto &numOfInstance : _numOfInstances) {
+	for (auto& numOfInstance : _numOfInstances) {
 		FeatureType feature = numOfInstance.first;
 		colocations.push_back(feature);
 	}
-	
+
 	//A B C
 	for (unsigned int i = 0; i < colocations.size() - 1; i++) {
 		for (unsigned int j = i + 1; j < colocations.size(); j++) {
@@ -112,16 +108,16 @@ bool  JoinLess::_isSubsetPrevalent(ColocationType& candidates, int k) {
 ColocationSetType JoinLess::_generateCandidateColocations_k(int k)
 {
 	if (k == 2)  return _generateCandidateColocations_2();
-	
+
 	vector<ColocationType> candidateColocations;
-	
+
 	//get
 	ColocationSetType  C = _prevalentColocation[k - 1];
-	
+
 	//存储
 	vector<FeatureType> colocationSet;
 	map < ColocationType, ColocationType> trie_colocationSet = {};
-	for (auto it = C.begin(); it != C.end();it++) {
+	for (auto it = C.begin(); it != C.end(); it++) {
 		colocationSet = (*it);
 		FeatureType lastElement = colocationSet.back();
 		colocationSet.pop_back();
@@ -140,10 +136,11 @@ ColocationSetType JoinLess::_generateCandidateColocations_k(int k)
 		if (item.second.size() >= 2) {
 			for (auto it_value = (item.second).begin(); it_value != (item.second).end() - 1; it_value++) {
 				for (auto it_value1 = it_value + 1; it_value1 != (item.second).end(); it_value1++) {
-					candidate.push_back(*it_value);
-					candidate.push_back(*it_value1);
-					if (_isSubsetPrevalent(candidate, k)) {
-						candidateColocations.push_back(candidate);
+					ColocationType tmpCandidate(candidate);
+					tmpCandidate.push_back(*it_value);
+					tmpCandidate.push_back(*it_value1);
+					if (_isSubsetPrevalent(tmpCandidate, k)) {
+						candidateColocations.push_back(tmpCandidate);
 					}
 				}
 			}
@@ -170,28 +167,27 @@ map<ColocationType, TableRowNeighborhoodsType> JoinLess::_filterStarInstances(Co
 			NeighborhoodsObjectType neighborhoodsObject = idStarNeighborhood.second;
 
 			if (neighborhoodsObject.size() < k) continue;
-			//AB AC
-			//B BC
+
 			//对于每一个中心生成的表实例
-			 _gen_star_k_instances(colocationInstanceMap,candidates,neighborhoodsObject, centerFeature,k);
+			_gen_star_k_instances(colocationInstanceMap, candidates, neighborhoodsObject, centerFeature, k);
 		}
 	}
 
 	return colocationInstanceMap;
 }
 
-bool JoinLess::isSubCandidate(const ColocationType &tmp_colocation,const ColocationSetType &candidates) {
+bool JoinLess::isSubCandidate(const ColocationType& tmp_colocation, const ColocationSetType& candidates) {
 	return binary_search(candidates.begin(), candidates.end(), tmp_colocation);
 }
 
 void JoinLess::_gen_star_k_instances_recursion(
-	map<ColocationType, TableRowNeighborhoodsType> &ans,
+	map<ColocationType, TableRowNeighborhoodsType>& ans,
 	const NeighborhoodsObjectType& neighborhoodsObject,
 	int k,
 	int pos,
 	int remainder,//还要填充的位置有几个
-	ColocationType &tmp_colocation,
-	NeighborhoodsObjectType &tmp_neighborhoods_object,
+	ColocationType& tmp_colocation,
+	NeighborhoodsObjectType& tmp_neighborhoods_object,
 	const ColocationSetType& candidates
 ) {
 	if (pos + remainder > neighborhoodsObject.size()) return;
@@ -207,31 +203,32 @@ void JoinLess::_gen_star_k_instances_recursion(
 	//取该元素
 	tmp_neighborhoods_object[k - remainder] = neighborhoodsObject[pos];
 	tmp_colocation[k - remainder] = neighborhoodsObject[pos].first;
-	_gen_star_k_instances_recursion(ans, neighborhoodsObject, k, pos + 1, remainder - 1,tmp_colocation, tmp_neighborhoods_object, candidates);
+	_gen_star_k_instances_recursion(ans, neighborhoodsObject, k, pos + 1, remainder - 1, tmp_colocation, tmp_neighborhoods_object, candidates);
 
 	//不取该元素，remainder的位置保留不变
-	_gen_star_k_instances_recursion(ans, neighborhoodsObject, k, pos + 1, remainder ,tmp_colocation, tmp_neighborhoods_object, candidates);
+	_gen_star_k_instances_recursion(ans, neighborhoodsObject, k, pos + 1, remainder, tmp_colocation, tmp_neighborhoods_object, candidates);
 }
 
-void JoinLess::_gen_star_k_instances(map<ColocationType, TableRowNeighborhoodsType> &ans,const ColocationSetType &candidates,
-	const NeighborhoodsObjectType &neighborhoodsObject,
-	FeatureType centerFeature, 
+void JoinLess::_gen_star_k_instances(map<ColocationType, TableRowNeighborhoodsType>& ans, const ColocationSetType& candidates,
+	const NeighborhoodsObjectType& neighborhoodsObject,
+	FeatureType centerFeature,
 	int k)
 {
-	
 	NeighborhoodsObjectType newNeighborhoodsObject;
 
+	//预分配空间
 	ColocationType tmp_colocation(k);
 	NeighborhoodsObjectType tmp_neighborhoods_object(k);
+
 	//中心Feature是第一个元素
 	tmp_colocation[0] = centerFeature;
 	tmp_neighborhoods_object[0] = neighborhoodsObject[0];
 
-	_gen_star_k_instances_recursion(ans, neighborhoodsObject,k,1,k - 1, tmp_colocation, tmp_neighborhoods_object, candidates);
+	_gen_star_k_instances_recursion(ans, neighborhoodsObject, k, 1, k - 1, tmp_colocation, tmp_neighborhoods_object, candidates);
 
 }
 
-bool JoinLess::isPrevalentByPartiIndex(const ColocationType &colocations, const TableRowNeighborhoodsType &tableRowNeighborhoods) {
+bool JoinLess::isPrevalentByPartiIndex(const ColocationType& colocations, const TableRowNeighborhoodsType& tableRowNeighborhoods) {
 	bool isPrevalent = true;
 
 	//初始化位图
@@ -242,12 +239,13 @@ bool JoinLess::isPrevalentByPartiIndex(const ColocationType &colocations, const 
 		bitMap[feature] = vector<bool>(_numOfInstances[feature], false);
 	}
 
-	//赋值
-	for (auto rowInstance : tableRowNeighborhoods) {
-		for (unsigned int i = 0; i < colocations.size(); i++) {
-			FeatureType feature = colocations[i];
+	//赋值 
+	// A B ;对于A 
+	// 0 1
+	for (unsigned int i = 0; i < colocations.size(); i++) {
+		FeatureType feature = colocations[i];
+		for (auto rowInstance : tableRowNeighborhoods) {
 			InstanceIdType id = get<InstanceIdType>(rowInstance[i]);
-			//rowInstance[i]是1,2...，从1开始，但是位图下标从0开始 
 			bitMap[feature][id - 1] = true;
 		}
 	}
@@ -271,7 +269,7 @@ bool JoinLess::isPrevalentByPartiIndex(const ColocationType &colocations, const 
 	return isPrevalent;
 }
 
-void JoinLess::_select_coarse_prevalent_colocations(map<ColocationType, TableRowNeighborhoodsType> &colocationInstanceMap) {
+void JoinLess::_select_coarse_prevalent_colocations(map<ColocationType, TableRowNeighborhoodsType>& colocationInstanceMap) {
 	//根据参与度进行剪枝
 	for (auto it = colocationInstanceMap.begin(); it != colocationInstanceMap.end();) {
 		auto& colocations = (*it).first;
@@ -308,14 +306,14 @@ bool JoinLess::isClique(NeighborhoodsObjectType neighborhoodsObject, int k) {
 	return flag;
 }
 
-void JoinLess::_filterCliqueInstances(map<ColocationType, TableRowNeighborhoodsType> &colocationInstanceMap, int k) {
-	for (auto &colocationInstance: colocationInstanceMap) {
+void JoinLess::_filterCliqueInstances(map<ColocationType, TableRowNeighborhoodsType>& colocationInstanceMap, int k) {
+	for (auto& colocationInstance : colocationInstanceMap) {
 		auto& colocations = colocationInstance.first;
 		auto& tableRowNeighborhoods = colocationInstance.second;
 
 		for (auto it = tableRowNeighborhoods.begin(); it != tableRowNeighborhoods.end();) {
 			NeighborhoodsObjectType neighborhoodsObjectType = (*it);
-			if (!isClique(neighborhoodsObjectType,k)) {
+			if (!isClique(neighborhoodsObjectType, k)) {
 				it = tableRowNeighborhoods.erase(it);
 			}
 			else {
@@ -328,7 +326,7 @@ void JoinLess::_filterCliqueInstances(map<ColocationType, TableRowNeighborhoodsT
 }
 
 void JoinLess::_selectPrevalentColocations(int k) {
-	auto &colocationInstanceMap = _cliqueInstances[k];
+	auto& colocationInstanceMap = _cliqueInstances[k];
 
 	for (auto it = colocationInstanceMap.begin(); it != colocationInstanceMap.end();) {
 		auto& colocations = (*it).first;
@@ -344,50 +342,45 @@ void JoinLess::_selectPrevalentColocations(int k) {
 	}
 }
 
+//判断一个集合是另一个集合的子集
 bool issubset(ColocationType colocation_sub, ColocationType  colocation) {
-	ColocationType unionColocation;
-	set_union(colocation.begin(), colocation.end(), colocation_sub.begin(), colocation_sub.end(),
-		back_inserter(unionColocation));
+	set<FeatureType> sub_set(colocation_sub.begin(), colocation_sub.end());
+	set<FeatureType> colocatioin_set(colocation.begin(), colocation.end());
+	for (auto& sub_item : sub_set) {
+		if (colocatioin_set.find(sub_item) == colocatioin_set.end()) {
+			return false;
+		}
+	}
 
-	return !empty(unionColocation);
+	return true;
 }
 
-vector<unsigned int>  getFeatureIdx(const ColocationType& colocation, const ColocationType& colocationSub) {
+vector<unsigned int>  getFeatureIdx(const ColocationType& colocation, const ColocationType& antecedent) {
 	vector<unsigned int> featureIdx;
 
 	int pos = 0;
 	//A B ;A B C 
-	for (unsigned int i = 0; i < colocationSub.size(); i++) {
-		if (colocation[i] == colocationSub[pos]) {
+	for (unsigned int i = 0; i < colocation.size(); i++) {
+		if (colocation[i] == antecedent[pos]) {
 			featureIdx.push_back(i);
 			pos++;
 		}
+		if (pos == antecedent.size())  break;
 	}
 
 	return featureIdx;
 }
 
 unsigned int getProjectNumOfColocation(TableRowNeighborhoodsType tableInstance, vector<unsigned int> featureIdx) {
-	unsigned int projectNumOfColocation;
-
 	set<NeighborhoodsObjectType> rowInstanceProjectSet;
-	//A:0
+
 	for (auto rowInstance : tableInstance) {
 		NeighborhoodsObjectType rowInstanceObjects;
 		//得到投影的模式的行实例个数
 		for (unsigned int i = 0; i < featureIdx.size(); i++) {
-			for (unsigned int j = 0; j < rowInstance.size(); j++) {
-				if (j == featureIdx[i]) {
-					rowInstanceObjects.push_back(rowInstance[j]);
-				}
-			}
+			rowInstanceObjects.push_back(rowInstance[featureIdx[i]]);
 		}
-		if (!empty(rowInstanceObjects)) {
-			//去重
-			if (rowInstanceProjectSet.find(rowInstanceObjects) == rowInstanceProjectSet.end()) {
-				rowInstanceProjectSet.insert(rowInstanceObjects);
-			}
-		}
+		rowInstanceProjectSet.insert(rowInstanceObjects);
 	}
 
 	return rowInstanceProjectSet.size();
@@ -398,9 +391,7 @@ unsigned int  JoinLess::getRowInstancesOfColocationSub(const ColocationType& col
 	return _cliqueInstances[k][colocationSub].size();
 }
 
-vector<Rule> JoinLess::_generateRules() {
-	vector<Rule> rules;
-
+void JoinLess::_generateRules() {
 	//获取colocationSubSet
 	ColocationSetType colocationSubSet;
 	ColocationSetType colocationOneSet = _prevalentColocation[1];
@@ -408,12 +399,10 @@ vector<Rule> JoinLess::_generateRules() {
 		colocationSubSet.push_back(colocationOne);
 	}
 
-	//a =>bc abc(投影bc)/bc
 	int length = _cliqueInstances.size();
 	for (unsigned int k = 2; k <= length; k++) {
 		map<ColocationType, TableRowNeighborhoodsType> colocationPackages = _cliqueInstances[k];
 
-		//abc
 		for (auto colocationPackage : colocationPackages) {
 			ColocationType colocation = colocationPackage.first;
 			TableRowNeighborhoodsType tableInstance = colocationPackage.second;
@@ -422,23 +411,23 @@ vector<Rule> JoinLess::_generateRules() {
 				if (!issubset(colocationSub, colocation)) {
 					continue;
 				}
-				//abc=>colocation  bc=>colocationSub
-				//找出colocationSub在colocation中的feature的下标（按照字典序排序）
-				//例如：colocation:A B C ;colocationSub:A C,则是 0,2
-				vector<unsigned int> featureIdx = getFeatureIdx(colocation, colocationSub);
+
+				//abc - bc = a, a =>bc  
+				ColocationType antecedent;
+				set_difference(colocation.begin(), colocation.end(), colocationSub.begin(), colocationSub.end(), back_inserter(antecedent));
+
+				vector<unsigned int> featureIdx = getFeatureIdx(colocation, antecedent);
 
 				//获得分子：abc在ab投影下的行实例数
 				unsigned int projectNumOfColocation = getProjectNumOfColocation(tableInstance, featureIdx);
 
 				//分母
-				unsigned int rowInstancesOfColocationSub = getRowInstancesOfColocationSub(colocationSub);
+				unsigned int rowInstancesOfColocationSub = getRowInstancesOfColocationSub(antecedent);
 
+				//条件概率是  abc中a去重 / bc
 				double conf = projectNumOfColocation * 1.0 / rowInstancesOfColocationSub;
 				if (conf >= _min_cond_prob) {
-					ColocationType antecedent;
-					//abc - bc = a, a =>bc
-					set_difference(colocation.begin(), colocation.end(), colocationSub.begin(), colocationSub.end(), back_inserter(antecedent));
-					rules.push_back(move(Rule{ antecedent, colocationSub, conf }));
+					_rules.insert(move(Rule{ antecedent, colocationSub, conf }));
 				}
 			}
 
@@ -446,71 +435,33 @@ vector<Rule> JoinLess::_generateRules() {
 			colocationSubSet.push_back(colocation);
 		}
 	}
-
-	return rules;
 }
 
-void visualization(vector<Rule> rules) {
-	ColocationType antecedent;
-	ColocationType consequent;
-	//ofstream ofs("output.txt");
-
-	for (auto& rule : rules)
-	{
-		antecedent = rule.antecedent;
-		for (auto& item : antecedent) {
-			cout << item;
-			int size = antecedent.size() - 1;
-			if (item == antecedent[size])
-				cout << " ";
-			else
-				cout << "^";
-		}
-
-		cout << " => ";
-
-		consequent = rule.consequent;
-		for (auto& item : consequent) {
-			cout << item;
-			int size = consequent.size() - 1;
-			if (item == consequent[size])
-				cout << " ";
-			else
-				cout << "^";
-		}
-
-		cout << "   confidence  : " << rule.conf;
-
-		cout << endl;
-	}
-}
-
-void JoinLess::execute()
+set<Rule> JoinLess::execute()
 {
 	_gen_star_neighborhoods();
-	int k = 2;
 
+	int k = 2;
 	while (_prevalentColocation.count(k - 1) && !_prevalentColocation[k - 1].empty()) {
-		//AB AC BC
 		ColocationSetType candidates = _generateCandidateColocations_k(k);
-		map<ColocationType, TableRowNeighborhoodsType> SIk =  _filterStarInstances(candidates,k);
+		map<ColocationType, TableRowNeighborhoodsType> SIk = _filterStarInstances(candidates, k);
 
 		if (k == 2) {
 			_cliqueInstances[2] = SIk;
-		}else {
+		}
+		else {
 			//根据参与度进行剪枝,SIk woule be changed
 			_select_coarse_prevalent_colocations(SIk);
 			//A1 B1 C1，判断B1 C1是不是BC下的，不是剪枝
-			_filterCliqueInstances(SIk,k);
+			_filterCliqueInstances(SIk, k);
 		}
-		
+
 		//两次剪枝后根据真正的参与度进行剪枝
 		_selectPrevalentColocations(k);
 		k++;
 	}
 
-	vector<Rule> rules = _generateRules();
+	_generateRules();
 
-	visualization(rules);
-
+	return _rules;
 }

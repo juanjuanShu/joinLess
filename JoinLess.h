@@ -7,39 +7,50 @@ struct Rule {
 	ColocationType antecedent;
 	ColocationType consequent;
 	double conf;
+
+	friend  bool operator < (struct Rule const& a, struct Rule const& b)
+	{
+		if (a.antecedent == b.antecedent) {
+			return a.consequent < b.consequent;
+		}
+		else {
+			return a.antecedent < b.antecedent;
+		}
+	}
 };
 
 class JoinLess
 {
 public:
-	JoinLess(vector<InstanceType>& instances, double min_prev, double min_cond_prob,double star_radius);
-	void execute();
+	JoinLess(vector<InstanceType>& instances, double min_prev, double min_cond_prob, double star_radius);
+	set<Rule> execute();
 
 private:
 	double _min_prev;
 	double _min_cond_prob;
 	double _star_radius;
-	map<FeatureType,map<InstanceIdType,LocationType>> _instances;
+	map<FeatureType, map<InstanceIdType, LocationType>> _instances;
 	map<unsigned int, ColocationSetType> _prevalentColocation;
-	map<FeatureType, map<InstanceIdType,NeighborhoodsObjectType>> _starNeighborhoods;
+	map<FeatureType, map<InstanceIdType, NeighborhoodsObjectType>> _starNeighborhoods;
 	RelationsType _relations;
 	map<FeatureType, unsigned int> _numOfInstances;
-	map<unsigned int,map<ColocationType,TableRowNeighborhoodsType>> _cliqueInstances;
+	map<unsigned int, map<ColocationType, TableRowNeighborhoodsType>> _cliqueInstances;
+	set<Rule> _rules;
 
-	RelationsType _gen_relations(vector<InstanceType>& instances);
+	void _gen_relations(vector<InstanceType>& instances);
 	void _gen_star_neighborhoods();
 	ColocationSetType  _generateCandidateColocations_k(int k);
 	ColocationSetType  _generateCandidateColocations_2();
 	bool  _isSubsetPrevalent(ColocationType& candidates, int k);
 	map<ColocationType, TableRowNeighborhoodsType>  _filterStarInstances(ColocationSetType candidates, int k);
 
-	 void _gen_star_k_instances(
-		  map<ColocationType, TableRowNeighborhoodsType> &ans,
-		  const ColocationSetType& candidates,
-		const NeighborhoodsObjectType& neighborhoodsObject, 
-		FeatureType centerFeature, 
+	void _gen_star_k_instances(
+		map<ColocationType, TableRowNeighborhoodsType>& ans,
+		const ColocationSetType& candidates,
+		const NeighborhoodsObjectType& neighborhoodsObject,
+		FeatureType centerFeature,
 		int k);
-	
+
 	void _gen_star_k_instances_recursion(
 		map<ColocationType, TableRowNeighborhoodsType>& ans,
 		const NeighborhoodsObjectType& neighborhoodsObject,
@@ -47,11 +58,11 @@ private:
 		int pos,
 		int remainder,//还要填充的位置有几个
 		ColocationType& tmp_colocation,
-		NeighborhoodsObjectType &tmp_neighborhoods_object, 
+		NeighborhoodsObjectType& tmp_neighborhoods_object,
 		const ColocationSetType& candidates
 	);
 
-	void _select_coarse_prevalent_colocations(map<ColocationType, TableRowNeighborhoodsType> &colocationInstanceMap);
+	void _select_coarse_prevalent_colocations(map<ColocationType, TableRowNeighborhoodsType>& colocationInstanceMap);
 
 	bool isPrevalentByPartiIndex(const ColocationType& colocations, const TableRowNeighborhoodsType& tableRowNeighborhoods);
 
@@ -64,6 +75,6 @@ private:
 	bool isSubCandidate(const ColocationType& tmp_colocation, const ColocationSetType& candidates);
 
 	unsigned int  getRowInstancesOfColocationSub(const ColocationType& colocationSub);
-	vector<Rule> _generateRules();
+	void _generateRules();
 };
 

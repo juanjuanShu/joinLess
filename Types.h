@@ -15,7 +15,7 @@ using TableInstanceType = vector<RowInstanceType>;
 using ColocationType = vector<FeatureType>;
 //候选模式,只存储特征    vector<vector<FeatureType>>  
 using ColocationSetType = vector<ColocationType>;
-using ColocationPackage = map<ColocationType,TableInstanceType>;
+using ColocationPackage = map<ColocationType, TableInstanceType>;
 
 using InstanceObjectType = pair<FeatureType, InstanceIdType>;
 using NeighborhoodsObjectType = vector<InstanceObjectType>;
